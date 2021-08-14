@@ -1,0 +1,5 @@
+string wayoints
+float32 use_ros_planner
+---
+bool success
+string message

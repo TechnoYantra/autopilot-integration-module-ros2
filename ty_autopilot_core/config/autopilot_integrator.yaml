@@ -1,0 +1,60 @@
+ty_autopilot_core_node:
+  ros__parameters:
+    use_sim_time: false
+    framework_type: "ARDUPILOT" # options: ARDUPILOT / PX4
+    framework_vesion: 4.1.0
+    airframe_class: 1 # ROVER
+    airframe_type: 0 # Undefined used for SKID_STEER/ diffrential drive
+    
+    autopilot_param_config_file: /home/chirag/ty_ros2_ws/src/autopilot-integration-module/ty_autopilot_core/config/autopilot_param.yaml
+    
+    autopilot_ros_config:
+      twist_mux_topics:
+          ext_nav: /move_base/cmd_vel # External Navigation / move_base topic
+          key_teleop: /key/cmd_vel # Keyboard teleop topic
+          sp_vel: /sp_vel/cmd_vel
+
+      ext_pose_estimation:
+      #################################################################################
+      # Frame transformer transforms the pose of source_frame to target_frame, 
+      # then it rotates the frame to match body_frame according ENU convention with
+      # the param orientation.x (roll), orientation.y (pitch), orientation.z (yaw) and 
+      # source_frame_orinetation.z (world yaw).
+      #################################################################################
+        enable: False
+        use_odom: True ## if false use ext_pose_topic
+        odometry:
+          use_tf: False
+          topic: "/camera/odom/sample"
+          stemped: False
+          covarience: False
+          source_frame: "cam_odom_frame"
+          target_frame: "cam_link"
+          frame_pose:  # Position and orientation of odometry frame
+            position:
+              x: 0.0
+              y: 0.0
+              z: 0.0
+            orientation:
+              x: 0.0
+              y: 0.0
+              z: 1.576
+          source_frame_orinetation:  
+          #################################################################################
+          # rotation to be applied to source frame wrt world frame for t265 camera use 
+          # z = 1.576
+          #################################################################################
+            x: 0.0
+            y: 0.0
+            z: 0.0
+        pose: 
+          topic: "/camera/pose/sample" 
+          frame_pose:
+            position:
+              x: 0.0
+              y: 0.0
+              z: 0.0
+            orientation:
+              x: 0.0
+              y: 0.0
+              z: 1.57

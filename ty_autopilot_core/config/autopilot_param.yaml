@@ -1,0 +1,32 @@
+output_channel_config: 
+    #################################################################################
+    # Assign servo channel functions to SERVOx_FUNCTION parameter
+    #https://ardupilot.org/rover/docs/parameters.html#servo1-function-servo-output-function
+    #################################################################################
+      SERVO1_FUNCTION: 73 # Throttle Left
+      SERVO3_FUNCTION: 78 # Throttle Right
+
+auxilary_channel_config:
+#################################################################################
+# Assign auxiliary functions to RCx_OPTION where x is RC channel number
+# Refer https://ardupilot.org/rover/docs/parameters.html#rc1-option-rc-input-option for more.
+#################################################################################
+  RC6_OPTION: 90 # EKF Pose Source
+  RC7_OPTION: 65 # GPS Disable
+
+ek3_sources_config:
+#################################################################################
+# Assign ek3 position sourcees
+# Refer https://ardupilot.org/copter/docs/parameters.html#ek3-src-parameters for more.
+#################################################################################
+  EK3_SRC1_POSXY: 3.000000
+  EK3_SRC1_POSZ:  1.000000
+  EK3_SRC1_VELXY: 3.000000
+  EK3_SRC1_VELZ:  3.000000
+  EK3_SRC1_YAW:   1.000000
+
+  EK3_SRC2_POSXY: 6.000000
+  EK3_SRC2_POSZ:  1.000000
+  EK3_SRC2_VELXY: 6.000000
+  EK3_SRC2_VELZ:  6.000000
+  EK3_SRC2_YAW:   6.000000

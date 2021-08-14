@@ -1,0 +1,5 @@
+string json
+---
+geographic_msgs/GeoPoint[] waypoints
+bool success
+string error

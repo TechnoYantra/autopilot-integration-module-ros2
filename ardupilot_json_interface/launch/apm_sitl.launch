@@ -1,0 +1,5 @@
+<launch>
+	<node pkg="ardupilot_json_interface" type="sitl.sh" name="sitl" output="screen"/>
+</launch>
+
+

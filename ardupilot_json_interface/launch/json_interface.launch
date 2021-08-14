@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="ardupilot_json_interface" type="ardupilot_json_interface_node.py" name="ardupilot_json_interface_node" output="screen">
+        <rosparam command="load" file="$(find ardupilot_json_interface)/config/ardupilot_interface_config.yaml"/>
+    </node>
+
+</launch>

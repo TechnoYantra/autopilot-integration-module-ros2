@@ -1,0 +1,13 @@
+int32 vehicle_id
+bool service_request
+string requested_mode
+bool requested_arming
+bool auto_arm
+bool use_ros_planner
+bool switch_gps
+string sp_type
+float32 ctrl_wait_timeout
+geometry_msgs/Point position_target
+geometry_msgs/Vector3 velocity_target
+float32 yaw
+float32 yaw_rate

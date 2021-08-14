@@ -1,0 +1,5 @@
+float64 px_lat
+float64 px_long
+---
+bool violation
+float32 distance

@@ -1,0 +1,26 @@
+<launch>
+	<!-- vim: set ft=xml noet : -->
+	<!-- base node launch file-->
+    <arg name="fcu_url" default="udp://:14561@127.0.0.1:14560" />
+    <arg name="gcs_url" default="udp://:14551@127.0.0.1:14550" /> 
+    <arg name="tgt_system" default="1" />
+    <arg name="tgt_component" default="1" />
+	<arg name="log_output" default="screen" />
+	<arg name="fcu_protocol" default="v2.0" />
+	<arg name="respawn_mavros" default="false" />
+    <arg name="pluginlists_yaml" default="$(find-pkg-share ty_autopilot_core)/config/mavros_pluginlists.yaml" />
+	<arg name="config_yaml" default="$(find-pkg-share ty_autopilot_core)/config/mavros_config.yaml" />
+		
+	<node pkg="mavros" exec="mavros_node" name="mavros" output="screen" >
+		<param name="fcu_url" value="$(var fcu_url)" />
+		<param name="gcs_url" value="$(var gcs_url)" />
+		<param name="target_system_id" value="$(var tgt_system)" />
+		<param name="target_component_id" value="$(var tgt_component)" />
+		<param name="fcu_protocol" value="$(var fcu_protocol)" />
+
+		<!-- load blacklist, config -->
+		<param from="$(var pluginlists_yaml)" />
+		<param from="$(var config_yaml)" />
+	</node>
+		
+</launch>

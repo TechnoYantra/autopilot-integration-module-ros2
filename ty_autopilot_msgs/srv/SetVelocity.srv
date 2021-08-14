@@ -1,0 +1,9 @@
+float32 vx
+float32 vy
+float32 vz
+float32 yaw_rate
+float32 command_life
+bool auto_arm
+---
+bool success
+string message

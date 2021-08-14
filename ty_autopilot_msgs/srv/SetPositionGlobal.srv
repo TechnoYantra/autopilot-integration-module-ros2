@@ -1,0 +1,9 @@
+float32 x_lat
+float32 y_long
+float32 z_alt
+float32 heading
+bool auto_arm
+bool use_ros_planner
+---
+bool success
+string message

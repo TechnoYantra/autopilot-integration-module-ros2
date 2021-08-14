@@ -1,0 +1,4 @@
+bool gps
+---
+bool success
+string message

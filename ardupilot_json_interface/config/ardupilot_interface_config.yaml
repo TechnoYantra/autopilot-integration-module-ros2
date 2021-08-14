@@ -1,0 +1,8 @@
+ardupilot_interface:
+  address: 127.0.0.1
+  port: 9012
+  frame_rate_hz: 200
+  pwm:
+    output_type: "Twist"  # channel / Twist
+  imu:
+    topic: "imu"

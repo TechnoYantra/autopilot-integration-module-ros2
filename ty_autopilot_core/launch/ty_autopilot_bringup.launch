@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="tf_map_odom" pkg="tf" type="static_transform_publisher"  args="0 0 0 0 0 0 /map /odom 100" output="screen"/>
+    <include file="$(find ty_rover_description)/launch/gazebo.launch"/>
+    <!-- <include file="$(find tybot_mavros)/launch/apm_sitl.launch"/> -->
+    <include file="$(find ty_autopilot_core)/launch/ty_autopilot_mavros.launch"/>
+
+    <include file="$(find ty_rover_navigation)/launch/move_base.launch" />
+</launch>
+

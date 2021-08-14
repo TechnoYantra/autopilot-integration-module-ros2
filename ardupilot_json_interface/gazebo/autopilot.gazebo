@@ -1,0 +1,176 @@
+<?xml version="1.0" ?>
+<robot name="ty_autopilot" xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+
+<xacro:macro name="ty_ardupilot" params="name:=ty_ardupilot instance wheel_fr_joint wheel_fl_joint wheel_br_joint wheel_bl_joint parent *origin">
+  
+<!-- Skid steer drive plugin -->
+<!-- 
+<gazebo>
+  <plugin name="skid_steer_drive_controller" filename="libgazebo_ros_skid_steer_drive.so">
+    <updateRate>100.0</updateRate>
+    <leftFrontJoint>joint_wheel_fl</leftFrontJoint>
+    <rightFrontJoint>joint_wheel_fr</rightFrontJoint>
+    <leftRearJoint>joint_wheel_bl</leftRearJoint>
+    <rightRearJoint>joint_wheel_br</rightRearJoint>
+    <wheelSeparation>0.266</wheelSeparation>
+    <wheelDiameter>0.1</wheelDiameter>
+    <robotBaseFrame>${parent}</robotBaseFrame>
+    <odometryTopic>noisy_odom</odometryTopic>
+    <odometryFrame>odom</odometryFrame>
+    <torque>100</torque>
+    <MaxForce>5.0</MaxForce>
+    <topicName>gazebo/cmd_vel_in</topicName>
+    <broadcastTF>true</broadcastTF>
+    <commandTopic>cmd_vel</commandTopic>
+  </plugin>
+</gazebo>
+ -->
+
+  <link name='imu_link'>
+      <inertial>
+        <xacro:insert_block name="origin" />
+        <mass value="0.01" />
+        <inertia ixx="0.059416" ixy="0.0" ixz="-0.0" iyy="0.066567" iyz="0.0" izz="0.059416" />
+    </inertial>
+  </link>
+
+  <joint name="imu_joint" type="revolute">
+      <xacro:insert_block name="origin" />
+      <parent link="${parent}" />
+      <child link="imu_link" />
+      <axis xyz="0 0 1"/>
+      <dynamics damping="1.0" friction="0.0"/>
+      <limit effort="0.0" lower="0.0" upper="0.0" velocity="0.0"/>
+  </joint>
+
+
+
+
+  <gazebo reference="imu_link">
+    <sensor name="imu_sensor" type="imu">
+		<pose>0 0 0 3.141593 0 0</pose>
+		<always_on>true</always_on>
+		<update_rate>200</update_rate>
+		<gravity>true</gravity>
+		<imu>
+			<angular_velocity>
+			<x>
+				<noise type="gaussian">
+				<mean>0.0</mean>
+				<stddev>2e-4</stddev>
+				</noise>
+			</x>
+			<y>
+				<noise type="gaussian">
+				<mean>0.0</mean>
+				<stddev>2e-4</stddev>
+				</noise>
+			</y>
+			<z>
+				<noise type="gaussian">
+				<mean>0.0</mean>
+				<stddev>2e-4</stddev>
+				</noise>
+			</z>
+			</angular_velocity>
+			<linear_acceleration>
+			<x>
+				<noise type="gaussian">
+				<mean>0.0</mean>
+				<stddev>1.7e-2</stddev>
+				</noise>
+			</x>
+			<y>
+				<noise type="gaussian">
+				<mean>0.0</mean>
+				<stddev>1.7e-2</stddev>
+				</noise>
+			</y>
+			<z>
+				<noise type="gaussian">
+				<mean>0.0</mean>
+				<stddev>1.7e-2</stddev>
+				</noise>
+			</z>
+			</linear_acceleration>
+		</imu>
+		<plugin name="autopilot_imu" filename="libgazebo_ros_imu_sensor.so">
+			<ros>
+				<remapping>~/out:=imu</remapping>
+			</ros>
+		</plugin>
+	</sensor>
+</gazebo>
+
+<gazebo>
+	    <plugin name="ArduPilot_Plugin" filename="libArduPilotPlugin.so">
+			  <fdm_addr>127.0.0.1</fdm_addr>
+	      <fdm_port_in>90${instance}2</fdm_port_in>
+	      <fdm_port_out>90${instance}3</fdm_port_out>
+	 
+	      <modelXYZToAirplaneXForwardZDown>0 0 0 3.141593 0 0</modelXYZToAirplaneXForwardZDown>
+	      <gazeboXYZToNED>0 0 0 3.141593 0 0</gazeboXYZToNED>
+	      <imuName>imu_sensor</imuName>
+	      <connectionTimeoutMaxCount>5</connectionTimeoutMaxCount>
+	 
+	      <control channel="0">
+	        <type>VELOCITY</type>
+	        <offset>0.0</offset>
+	        <p_gain>0.10</p_gain>
+	        <i_gain>0</i_gain>
+	        <d_gain>0</d_gain>
+	        <i_max>0</i_max>
+	        <i_min>0</i_min>
+	        <cmd_max>10</cmd_max>
+	        <cmd_min>-10</cmd_min>
+	        <jointName>${wheel_fl_joint}</jointName>
+	        <multiplier>100</multiplier>
+	      </control>
+	      <control channel="2">
+	        <type>VELOCITY</type>
+	        <offset>0.0</offset>
+	        <p_gain>0.1</p_gain>
+	        <i_gain>0</i_gain>
+	        <d_gain>0</d_gain>
+	        <i_max>0</i_max>
+	        <i_min>0</i_min>
+	        <cmd_max>10</cmd_max>
+	        <cmd_min>-10</cmd_min>
+	        <jointName>${wheel_fr_joint}</jointName>
+	        <multiplier>100</multiplier>
+	      </control>
+	      <control channel="0">
+	        <type>VELOCITY</type>
+	        <offset>0.0</offset>
+	        <p_gain>0.1</p_gain>
+	        <i_gain>0</i_gain>
+	        <d_gain>0</d_gain>
+	        <i_max>0</i_max>
+	        <i_min>0</i_min>
+	        <cmd_max>10</cmd_max>
+	        <cmd_min>-10</cmd_min>
+	        <jointName>${wheel_bl_joint}</jointName>
+	        <multiplier>100</multiplier>
+	      </control>
+	      <control channel="2">
+	        <type>VELOCITY</type>
+	        <offset>0.0</offset>
+	        <p_gain>0.10</p_gain>
+	        <i_gain>0</i_gain>
+	        <d_gain>0</d_gain>
+	        <i_max>0</i_max>
+	        <i_min>0</i_min>
+	        <cmd_max>10</cmd_max>
+	        <cmd_min>-10</cmd_min>
+	        <jointName>${wheel_br_joint}</jointName>
+	        <multiplier>100</multiplier>
+	      </control>
+	    </plugin>
+	 </gazebo> 
+
+
+</xacro:macro>
+
+
+</robot>

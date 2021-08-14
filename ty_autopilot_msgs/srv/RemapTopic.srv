@@ -1,0 +1,5 @@
+string topic_in
+string topic_out
+---
+string message
+bool success
