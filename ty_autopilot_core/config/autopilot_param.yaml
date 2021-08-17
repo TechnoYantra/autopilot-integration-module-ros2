@@ -4,7 +4,7 @@ output_channel_config:
     #https://ardupilot.org/rover/docs/parameters.html#servo1-function-servo-output-function
     #################################################################################
       SERVO1_FUNCTION: 73 # Throttle Left
-      SERVO3_FUNCTION: 78 # Throttle Right
+      SERVO3_FUNCTION: 74 # Throttle Right
 
 auxilary_channel_config:
 #################################################################################

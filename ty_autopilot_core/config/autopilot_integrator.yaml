@@ -6,11 +6,11 @@ ty_autopilot_core_node:
     airframe_class: 1 # ROVER
     airframe_type: 0 # Undefined used for SKID_STEER/ diffrential drive
     
-    autopilot_param_config_file: /home/chirag/ty_ros2_ws/src/autopilot-integration-module/ty_autopilot_core/config/autopilot_param.yaml
+    autopilot_param_config_file: /home/chirag/ty_ros2_ws/src/ros2-autopilot-integration-module/ty_autopilot_core/config/autopilot_param.yaml
     
     autopilot_ros_config:
       twist_mux_topics:
-          ext_nav: /move_base/cmd_vel # External Navigation / move_base topic
+          ext_nav: /nav_cmd_vel # External Navigation / move_base topic
           key_teleop: /key/cmd_vel # Keyboard teleop topic
           sp_vel: /sp_vel/cmd_vel
 
