@@ -24,7 +24,7 @@ class ObstacleDetector(BaseNode):
                 pass
             
         if sample:
-            if max(sample) > RosParam.get_param(self, "safety_range_min", 0.5) and max(sample) < RosParam.get_param(self, "safety_range_max", 3):
+            if max(sample) > RosParam.get_param(self, "safety_range_min", 0.5) and max(sample) < RosParam.get_param(self, "safety_range_max", 5):
                 RosParam.set_param(self, "obstacle_detected", True)
                 # print("Obsticle: ",True)
             else:
