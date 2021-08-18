@@ -1,3 +1,5 @@
+from ty_autopilot_core.node.setpoint import SetpointVelocity, SetpointPosition
+from ty_autopilot_core.node.rc_override import MavrosRC
 from ty_autopilot_core.node.obstacle_detection import ObstacleDetector
 from .node.cmd_vel_mux_selector import MuxSelectorNode
 import rclpy
@@ -70,11 +72,13 @@ class MissionController(BaseNode):
         CommandRepublisher.__init__(self)
         ObstacleDetector.__init__(self)
         MuxSelectorNode.__init__(self)
+        MavrosRC.__init__(self)
+        SetpointVelocity.__init__(self)
+        SetpointPosition.__init__(self)
         self.log = self.get_logger().info("Started ty_autopilot_core_node")
         self._allow_undeclared_parameters = True
         self.automatically_declare_parameters_from_overrides=True
 
-        self.local_target_pub = self.Publisher( PositionTarget, '/mavros/setpoint_position/local', rclpy.qos.qos_profile_sensor_data)
         self.srv_client_mission_push = self.create_client( srv_name="/mavros/mission/push", srv_type= WaypointPush)
         self.command_request_pub = self.Publisher( CommandRequest, "/ty_autopilot/com_request_in", 10)
         self.default_cmd()
@@ -87,8 +91,8 @@ class MissionController(BaseNode):
         self.create_timer(0.0, self.transformer_timer_callback)  
         self.create_timer(0.1, self.comm_republisher_timer_callback)   
         self.create_timer(0.2, self.mux_publisher_timer_callback)   
-        self.create_timer(0.2, self.obstacle_detection_timer_callback)  
-        # self.create_timer(0.2, self.debug_timer_callback)   
+        self.create_timer(0.2, self.obstacle_detection_timer_callback) 
+        self.create_timer(0.2, self.rc_override_timer_callback)  
 
         self.subscribe_topic(topic="/mavros/state", type=State, qos_profile=sensor_qos)
         self.subscribe_topic(topic="/diagnostics", type=DiagnosticArray, qos_profile=sensor_qos)
@@ -109,6 +113,8 @@ class MissionController(BaseNode):
         self.create_service( SetPositionGlobal, "ty_autopilot/set_position_global", self.set_position_global)
         self.create_service( SetWaypoints, "ty_autopilot/set_waypoints", self.set_waypoints)
         self.goal_handle = None
+        self.nav_to_pose_client = None
+        self.rc_channels = [0]*8
         t = threading.Thread(target=self.main_loop, daemon = True).start()
 
     def navigate_to(self, x, y):
@@ -118,14 +124,10 @@ class MissionController(BaseNode):
         goal_pose.pose.position.x = x
         goal_pose.pose.position.y = y
         goal_pose.pose.orientation.w = 1.0
-        nav_to_pose_client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
-        self.get_logger().info("Waiting for 'NavigateToPose' action server")
-        # while not nav_to_pose_client.wait_for_server(timeout_sec=1.0):
-        #     self.get_logger().info("'NavigateToPose' action server not available, waiting...")
         goal_msg = NavigateToPose.Goal()
         goal_msg.pose = goal_pose
         self.get_logger().info('Navigating to goal: ' + str(goal_pose.pose.position.x) + ' ' + str(goal_pose.pose.position.y))
-        send_goal_future = nav_to_pose_client.send_goal_async(goal_msg, self.feedbackCallback)
+        send_goal_future = self.nav_to_pose_client.send_goal_async(goal_msg, self.feedbackCallback)
         self.goal_handle = send_goal_future.result()
 
     def feedbackCallback(self, msg):
@@ -137,34 +139,31 @@ class MissionController(BaseNode):
         try:
             FrameTransformer.transform(self)
         except:
-            time.sleep(0.5)
+            self.get_logger().error('transformer')
 
     def comm_republisher_timer_callback(self):
         try:
             CommandRepublisher.republish_command(self)
         except:
-            time.sleep(0.5)
+            self.get_logger().error('comm_republisher')
 
     def mux_publisher_timer_callback(self):
-        BaseNode.get_logger(self).info(str(RosParam.get_param(self,parameter_name='mux_select')))
         try:
             MuxSelectorNode.mux_publisher(self)
         except:
-            time.sleep(0.5)
-            # BaseNode.get_logger(self).info("mux_select: error")
+            self.get_logger().error('mux_publisher')
     
     def obstacle_detection_timer_callback(self):
         try:
             ObstacleDetector.obstacle_detection(self)
         except:
-            time.sleep(0.5)
-        
-    def debug_timer_callback(self):
+            self.get_logger().error('obstacle_detection')
+
+    def rc_override_timer_callback(self):
         try:
-            BaseNode.get_logger(self).info("mux_select: "+ str(RosParam.get_param(self, "mux_select")))
-            BaseNode.get_logger(self).info("obstacle_detected: "+ str(RosParam.get_param(self, "obstacle_detected")))
+            MavrosRC.publish_rc_channels(self, self.rc_channels)
         except:
-            time.sleep(0.5)
+            self.get_logger().error('rc_override')
             
     def control(self, sp_type, frame_id, auto_arm, arm_vehicle, enable_rc, use_joy, mode, waypoints, x, y, z, yaw, vx, vy, vz, yaw_rate, use_ros_planner, ctrl_wait_timeout, switch_gps):
         comm_req = CommandRequest()
@@ -321,12 +320,14 @@ class MissionController(BaseNode):
         modes = {
                     Mode.GUIDED.value: self.guided,
                     Mode.AUTO.value: self.auto,
-                    # Mode.HOLD.value: self.hold,
+                    Mode.HOLD.value: self.hold,
                     # Mode.MAVCOMMAND.value: self.mavcommand
                 }
         function = modes.get(mode, lambda: "Invalid Mode")
         function()
 
+    def hold(self):
+        pass
 
     def guided(self):
         # RosParam.set_param(self, parameter_name="continue_mission", parameter_value=True)
@@ -342,7 +343,7 @@ class MissionController(BaseNode):
                     RosParam.set_param(self, parameter_name="new_goal", parameter_value= False)
             else:
                 if not RosParam.get_param(self, parameter_name="wp_reached", default_value=False):
-                    reached = self.sp_position.set(position_target.x,position_target.y,position_target.z)
+                    reached = SetpointPosition.set(self, position_target.x, position_target.y, position_target.z)
                     if reached:
                         RosParam.set_param(self, parameter_name="wp_reached", parameter_value=True)
         elif self.command_req.sp_type == SetpointType.POSITION_GLOBAL.value:
@@ -367,7 +368,7 @@ class MissionController(BaseNode):
             self.get_logger().info(str(velocity_target))
             if RosParam.get_param(self, parameter_name="mux_select") != self.sp_vel_topic:
                 RosParam.set_param(self, parameter_name="mux_select", parameter_value=self.sp_vel_topic)
-            self.sp_velocity.set(velocity_target.x, velocity_target.y, velocity_target.z, yaw_rate)
+            SetpointVelocity.set(self, velocity_target.x, velocity_target.y, velocity_target.z, yaw_rate)
 
         if RosParam.get_param(self, parameter_name="waypoint_pulled", default_value=False) == True:
             self.monitor_mission_progress()
@@ -398,9 +399,9 @@ class MissionController(BaseNode):
     def auto(self):
         if not RosParam.get_param(self,parameter_name='waypoint_pulled', default_value= False):
             resp = self.waypoint_pull.call(WaypointPull.Request())
-            self.get_logger().info(str(resp))
             RosParam.set_param(self, parameter_name="waypoint_pulled", parameter_value= resp.success)
             RosParam.set_param(self, parameter_name="mission_complete", parameter_value= False)
+            time.sleep(1)
             for waypoint in range(len(self.read_topic("/mavros/mission/waypoints").waypoints)):
                 if self.read_topic("/mavros/mission/waypoints").waypoints[waypoint].command == 92:
                     RosParam.set_param(self, parameter_name="guided_enable",parameter_value=  True)
@@ -442,10 +443,7 @@ class MissionController(BaseNode):
 
         if RosParam.get_param(self, parameter_name="obstacle_detected", default_value=False):
             self.get_logger().info("Obstacle detected, Switching to GUIDED")
-            try:
-                self.goal_handle.cancel_goal_async()
-            except:
-                pass
+            self.nav_to_pose_client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
             self.change_mode.call(SetMode.Request(custom_mode=Mode.GUIDED.value))
 
     def monitor_mission_progress(self):
@@ -488,12 +486,11 @@ class MissionController(BaseNode):
 
 
         for rc_option in rc_aux_function:
-            rc_channels[int(re.findall(r"\d+", rc_option)[0])-1] = rc_aux_function[rc_option]
+            self.rc_channels[int(re.findall(r"\d+", rc_option)[0])-1] = rc_aux_function[rc_option]
             self.get_logger().info(str(rc_channels))
             if MavParam.mav_param_get(self, rc_option) != rc_aux_function[rc_option]:
                 ret = MavParam.mav_param_set(self, rc_option, rc_aux_function[rc_option])
                 self.get_logger().info(str(ret))
-        # RosParam.set_param("rc_options", rc_channels)
 
         for ek3_source in ek3_source_list:
             if MavParam.mav_param_get(self, ek3_source) != ek3_source_list[ek3_source]:
