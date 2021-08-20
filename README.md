@@ -43,21 +43,36 @@ This repository contains the ROS stack for high level control and interfacing RO
 
 ______________________________________________
 
-
 ## Installation
 
-**Package Installation**
+**Package Installation** 
+
+On ROS2 Foxy
 
 ```bash
-cd <your_catkin_ws>/src
-git clone https://github.com/TechnoYantra/autopilot-integration-module.git
+cd <your_colcon_ws>/src
+git clone https://github.com/TechnoYantra/ros2-autopilot-integration-module.git
 cd ..
-catkin_make
+colcon build --symlink-install
 ```
 
+- Install Dependancies
+
+  - ```bash
+    # Navigation stack 2
+    sudo apt-get install ros-foxy-nav2-*
+    ```
+
+**ROS1 Bridge **
+
+Build and install ros1 bridge from source https://github.com/ros2/ros1_bridge#building-the-bridge-from-source
+
 **MAVROS Installation**
+
+On ROS1 Noetic
+
 ```bash
-sudo apt-get install ros-melodic-mavros ros-melodic-mavros-extras -y
+sudo apt-get install ros-noetic-mavros ros-noetic-mavros-extras -y
 wget https://raw.githubusercontent.com/mavlink/mavros/master/mavros/scripts/install_geographiclib_datasets.sh
 chmod +x install_geographiclib_datasets.sh 
 sudo ./install_geographiclib_datasets.sh
@@ -78,6 +93,8 @@ echo "export PATH=/usr/lib/ccache:$PATH" >> ~/.bashrc
 source ~/.bashrc
 ```
 
+
+
 ## Configuration
 
 **Configure package**
@@ -85,79 +102,106 @@ source ~/.bashrc
 Open config file ty_autopilot_core/config/autopilot_integrator.yaml and edit parameters as described below.
 
 ```yaml
-autopilot_config:
-  framework_type: "ARDUPILOT" # options: ARDUPILOT / PX4
-  framework_vesion: 4.1.0 
-  airframe_class: 1 # ROVER   
-  airframe_type: 0 # Undefined used for SKID_STEER/ differential drive
+ty_autopilot_core_node:
+  ros__parameters:
+    use_sim_time: false
+    framework_type: "ARDUPILOT" # options: ARDUPILOT / PX4
+    framework_vesion: 4.1.0
+    airframe_class: 1 # ROVER
+    airframe_type: 0 # Undefined used for SKID_STEER/ diffrential drive
+    
+    autopilot_param_config_file: /home/<user_name>/<your_colcon_ws>/src/ros2-autopilot-integration-module/ty_autopilot_core/config/autopilot_param.yaml
+    
+    autopilot_ros_config:
+      twist_mux_topics:
+          ext_nav: /nav_cmd_vel # External Navigation / move_base topic
+          key_teleop: /key/cmd_vel # Keyboard teleop topic
+          sp_vel: /sp_vel/cmd_vel
 
-  output_channel_config:
-  #################################################################################
-  # Assign servo channel functions to SERVOx_FUNCTION parameter
-  #https://ardupilot.org/rover/docs/parameters.html#servo1-function-servo-output-function
-  #################################################################################
-    SERVO1_FUNCTION: 73 # Throttle Left
-    SERVO3_FUNCTION: 74 # Throttle Right
-  
-  auxilary_channel_config:
-  #################################################################################
-  # Assign auxiliary functions to RCx_OPTION where x is RC channel number
-  # Refer https://ardupilot.org/rover/docs/parameters.html#rc1-option-rc-input-option for more.
-  #################################################################################
-    RC6_OPTION: 90 # EKF Pose Source
-    RC7_OPTION: 65 # GPS Disable
-
-
-autopilot_ros_config:
-  twist_mux_topics:
-      ext_nav: move_base/cmd_vel # External Navigation / move_base topic
-      key_teleop: key/cmd_vel # Keyboard teleop topic
-
-  ext_pose_estimation:
-  #################################################################################
-  # Frame transformer transforms the pose of source_frame to target_frame, 
-  # then it rotates the frame to match body_frame according ENU convention with
-  # the param orientation.x (roll), orientation.y (pitch), orientation.z (yaw) and 
-  # source_frame_orinetation.z (world yaw).
-  #################################################################################
-    enable: False
-    use_odom: True ## if false use ext_pose_topic
-    odometry:
-      use_tf: False
-      topic: "/camera/odom/sample"
-      stemped: False
-      covariance: False
-      source_frame: "cam_odom_frame"
-      target_frame: "cam_link"
-      frame_pose:  # Position and orientation of odometry frame
-        position:
-          x: 0.0
-          y: 0.0
-          z: 0.0
-        orientation:
-          x: 0.0
-          y: 0.0
-          z: 0.0
-      source_frame_orinetation:  
+      ext_pose_estimation:
       #################################################################################
-      # rotation to be applied to source frame wrt world frame.
-      # For t265 camera use z = 1.576
+      # Frame transformer transforms the pose of source_frame to target_frame, 
+      # then it rotates the frame to match body_frame according ENU convention with
+      # the param orientation.x (roll), orientation.y (pitch), orientation.z (yaw) and 
+      # source_frame_orinetation.z (world yaw).
       #################################################################################
-        x: 0.0
-        y: 0.0
-        z: 0.0
-    pose: 
-      topic: "/camera/pose/sample" 
-      frame_pose:
-        position:
-          x: 0.0
-          y: 0.0
-          z: 0.0
-        orientation:
-          x: 0.0
-          y: 0.0
-          z: 1.57
+        enable: False
+        use_odom: True ## if false use ext_pose_topic
+        odometry:
+          use_tf: False
+          topic: "/camera/odom/sample"
+          stemped: False
+          covarience: False
+          source_frame: "cam_odom_frame"
+          target_frame: "cam_link"
+          frame_pose:  # Position and orientation of odometry frame
+            position:
+              x: 0.0
+              y: 0.0
+              z: 0.0
+            orientation:
+              x: 0.0
+              y: 0.0
+              z: 1.576
+          source_frame_orinetation:  
+          #################################################################################
+          # rotation to be applied to source frame wrt world frame for t265 camera use 
+          # z = 1.576
+          #################################################################################
+            x: 0.0
+            y: 0.0
+            z: 0.0
+        pose: 
+          topic: "/camera/pose/sample" 
+          frame_pose:
+            position:
+              x: 0.0
+              y: 0.0
+              z: 0.0
+            orientation:
+              x: 0.0
+              y: 0.0
+              z: 1.57
 ```
+
+ty_autopilot_core/config/autopilot_param.yaml
+
+```yaml
+output_channel_config: 
+    #################################################################################
+    # Assign servo channel functions to SERVOx_FUNCTION parameter
+    #https://ardupilot.org/rover/docs/parameters.html#servo1-function-servo-output-function
+    #################################################################################
+      SERVO1_FUNCTION: 73 # Throttle Left
+      SERVO3_FUNCTION: 74 # Throttle Right
+
+auxilary_channel_config:
+#################################################################################
+# Assign auxiliary functions to RCx_OPTION where x is RC channel number
+# Refer https://ardupilot.org/rover/docs/parameters.html#rc1-option-rc-input-option for more.
+#################################################################################
+  RC6_OPTION: 90 # EKF Pose Source
+  RC7_OPTION: 65 # GPS Disable
+
+ek3_sources_config:
+#################################################################################
+# Assign ek3 position sourcees
+# Refer https://ardupilot.org/copter/docs/parameters.html#ek3-src-parameters for more.
+#################################################################################
+  EK3_SRC1_POSXY: 3.000000
+  EK3_SRC1_POSZ:  1.000000
+  EK3_SRC1_VELXY: 3.000000
+  EK3_SRC1_VELZ:  3.000000
+  EK3_SRC1_YAW:   1.000000
+
+  EK3_SRC2_POSXY: 6.000000
+  EK3_SRC2_POSZ:  1.000000
+  EK3_SRC2_VELXY: 6.000000
+  EK3_SRC2_VELZ:  6.000000
+  EK3_SRC2_YAW:   6.000000
+```
+
+
 
 ## Simulation Setup
 
@@ -220,25 +264,47 @@ autopilot_ros_config:
 **Launch Vehicle controller**
 
 ```bash
-roslaunch ty_autopilot_core ty_autopilot_vehicle_control.launch
+source /opt/ros/foxy/setup.bash
+source <your_colcon_ws>/install/setup.bash
+ros2 launch ty_autopilot_core ty_autopilot_vehicle_control.launch.py
 ```
 
 **Launch SITL**
 
-```
-#################################################################################
-# Use JSON Interface 
-# Note: Some bugs in sim_vehicle.py for this interface, causes non consistent mavros connection, need to load parameters after sitl launch via mavproxy cli
-#################################################################################
-sim_vehicle.py -v APMrover2 -f JSON 127.0.0.1 -m --mav10 --map --console --out=udp:127.0.0.1:14550 --out=tcpin:127.0.0.1:8100 --mavproxy-args="--streamrate=50"
-
-
+```bash
 #################################################################################
 # Use gazebo-rover
 #################################################################################
 export PARAM_FILE=<path_to_your>/<param_file>.param
 sim_vehicle.py -v APMrover2 -f gazebo-rover --wipe-eeprom --add-param-file=$PARAM_FILE -m --mav10 --map --console -I1
+
+# OR
+#################################################################################
+# Use JSON Interface 
+# Note: Some bugs in sim_vehicle.py for this interface, causes non consistent mavros connection, need to load parameters after sitl launch via mavproxy cli
+#################################################################################
+sim_vehicle.py -v APMrover2 -f JSON 127.0.0.1 -m --mav10 --map --console --out=udp:127.0.0.1:14550 --out=tcpin:127.0.0.1:8100 --mavproxy-args="--streamrate=50"
 ```
+
+**Launch Mavros (ROS1)**
+
+```bash
+source /opt/ros/noetic/setup.bash
+source <your_colcon_ws>/devel/setup.bash
+roslaunch mavros_node mavros.launch
+```
+
+**Launch ROS1 bridge**
+
+```bash
+source /opt/ros/noetic/setup.bash
+source /opt/ros/foxy/setup.bash
+source /home/chirag/ros1_bridge_ws/install/setup.bash
+export ROS_MASTER_URI=http://localhost:11311
+ros2 run ros1_bridge dynamic_bridge --bridge-all-1to2-topics
+```
+
+
 
 **Features and options**
 
@@ -248,12 +314,12 @@ sim_vehicle.py -v APMrover2 -f gazebo-rover --wipe-eeprom --add-param-file=$PARA
 #################################################################################
 # Turn On GPS 
 #################################################################################
-rosparam set /disable_gps false
+ros2 param set /ty_autopilot_core_node disable_gps false
 
 #################################################################################
 # Turn Off GPS 
 #################################################################################
-rosparam set /disable_gps true
+ros2 param set /ty_autopilot_core_node disable_gps true
 ```
 
 - Change EKF3 Navigation source
@@ -268,7 +334,7 @@ rosparam set /disable_gps true
 # EK3_SRC1_VELZ    3.000000
 # EK3_SRC1_YAW     1.000000
 #################################################################################
-rosparam set /mav_pose_source 1
+ros2 param set /ty_autopilot_core_node mav_pose_source 1
 
 #################################################################################
 # Source 2 (External Estimation)
@@ -278,7 +344,7 @@ rosparam set /mav_pose_source 1
 # EK3_SRC2_VELZ    6.000000
 # EK3_SRC2_YAW     1.000000
 #################################################################################
-rosparam set /mav_pose_source 2
+ros2 param set /ty_autopilot_core_node mav_pose_source 2
 
 #################################################################################
 # Source 3 ( Not Used )
@@ -288,12 +354,17 @@ rosparam set /mav_pose_source 2
 # EK3_SRC3_VELZ    0.000000
 # EK3_SRC3_YAW     0.000000
 #################################################################################
-rosparam set /mav_pose_source 3
+ros2 param set /ty_autopilot_core_node mav_pose_source 3
 ```
 
 **Navigation Methods**
 
 - Setpoint Velocity
+
+```bash
+ros2 service call /ty_autopilot/set_velocity ty_autopilot_msgs/srv/SetVelocity "{vx: 2.0, vy: 0.0, vz: 0.0, yaw_rate: 0.0, command_life: 0.0, auto_arm: True}"
+```
+
 
 ```python
 #!/usr/bin/env python
@@ -324,6 +395,12 @@ setpoint_velocity(vx= -2.0, vy= 0.0, vz= 0.0, yaw_rate= 0.0, command_life= 0.0, 
 
 - Setpoint Position Local
 
+```bash
+ros2 service call /ty_autopilot/set_position_local ty_autopilot_msgs/srv/SetPositionLocal "{frame_id: 'map', x: 10.0, y: 5.0, z: 0.0, heading: 0.0, auto_arm: True, use_ros_planner: False}"
+```
+
+
+
 ```python
 #!/usr/bin/env python
 #################################################################################
@@ -352,6 +429,12 @@ setpoint_position_local(frame_id= 'map', x= 10.0, y= 5.0, z= 0.0, heading= 0.0, 
 ```
 
 - Setpoint Position Global
+
+```bash
+ros2 service call /ty_autopilot/set_position_global ty_autopilot_msgs/srv/SetPositionGlobal "{frame_id: 'world', x: -35.36296487, y: 149.16523124, z: 0.0, heading: 0.0, auto_arm: True, use_ros_planner: False}"
+```
+
+
 
 ```python
 #!/usr/bin/env python
@@ -383,6 +466,12 @@ setpoint_position_global(frame_id= 'world', x_lat= -35.36296487, y_long= 149.165
 
 - Set EKF Origin
 
+```bash
+ros2 service call /ty_autopilot/set_ekf_origin ty_autopilot_msgs/srv/SetEkfOrigin "{}"
+```
+
+
+
 
 ```python
   #!/usr/bin/env python
@@ -405,6 +494,12 @@ setpoint_position_global(frame_id= 'world', x_lat= -35.36296487, y_long= 149.165
 ```
 
 - Get Telemetry Status
+
+```bash
+ros2 service call /ty_autopilot/get_vehicle_state ty_autopilot_msgs/srv/GetVehicleState "{frame_id: 'map'}"
+```
+
+
 
 ```python
   #!/usr/bin/env python
