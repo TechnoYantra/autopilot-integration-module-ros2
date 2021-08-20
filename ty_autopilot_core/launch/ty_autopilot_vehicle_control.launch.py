@@ -5,6 +5,7 @@ from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument
 import os
 import yaml
+
 def generate_launch_description():
     param_file_name = 'autopilot_integrator.yaml'
     
@@ -16,10 +17,6 @@ def generate_launch_description():
             get_package_share_directory('ty_autopilot_core'),
             param_file_name)
             )
-
-    # with open(configFilepath, 'r') as file:
-    #     configParams = yaml.safe_load(file)['ty_autopilot_core_node']['ros__parameters']  
-    # print(configParams)
 
     return LaunchDescription([
         DeclareLaunchArgument(
@@ -36,8 +33,3 @@ def generate_launch_description():
         )
     ])
 
-# <launch>
-#     <node pkg="ty_autopilot_core" exec="vehicle_controller_node" name="ty_autopilot_core_node" output="screen">
-#         <rparam from="$(find-pkg-share ty_autopilot_core)/config/autopilot_integrator.yaml"/>
-#     </node>
-# </launch>
