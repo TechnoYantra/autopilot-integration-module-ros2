@@ -81,6 +81,7 @@ class MissionController(BaseNode):
 
         self.srv_client_mission_push = self.create_client( srv_name="/mavros/mission/push", srv_type= WaypointPush)
         self.command_request_pub = self.Publisher( CommandRequest, "/ty_autopilot/com_request_in", 10)
+        self.nav_goal_pub = self.Publisher( PoseStamped, "/goal_update", 10)
         self.default_cmd()
 
         self.autopilot_param_config = RosParam.get_param(self, parameter_name='autopilot_param_config_file', get_value=True)
@@ -113,8 +114,10 @@ class MissionController(BaseNode):
         self.create_service( SetPositionGlobal, "ty_autopilot/set_position_global", self.set_position_global)
         self.create_service( SetWaypoints, "ty_autopilot/set_waypoints", self.set_waypoints)
         self.goal_handle = None
-        self.nav_to_pose_client = None
+        # self.nav_to_pose_client = None
         self.rc_channels = [0]*8
+        self.init_goal = True
+        self.nav_to_pose_client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
         t = threading.Thread(target=self.main_loop, daemon = True).start()
 
     def navigate_to(self, x, y):
@@ -126,14 +129,25 @@ class MissionController(BaseNode):
         goal_pose.pose.orientation.w = 1.0
         goal_msg = NavigateToPose.Goal()
         goal_msg.pose = goal_pose
-        self.get_logger().info('Navigating to goal: ' + str(goal_pose.pose.position.x) + ' ' + str(goal_pose.pose.position.y))
-        send_goal_future = self.nav_to_pose_client.send_goal_async(goal_msg, self.feedbackCallback)
-        self.goal_handle = send_goal_future.result()
+        self.get_logger().info(str(self.init_goal))
+        if RosParam.get_param(self, parameter_name="init_goal", default_value= True):
+            RosParam.set_param(self, parameter_name="init_goal", parameter_value= False)
+            self.get_logger().info('Navigating to goal: ' + str(goal_pose.pose.position.x) + ' ' + str(goal_pose.pose.position.y))
+            send_goal_future = self.nav_to_pose_client.send_goal_async(goal_msg, self.feedbackCallback)
+            self.goal_handle = send_goal_future.result()
+            time.sleep(1)
+        try:
+            self.result_future = self.goal_handle.get_result_async()
+            self.get_logger().info(str(self.result_future.result().status))
+        except:
+            time.sleep(1)
+        self.nav_goal_pub.publish(goal_pose)
+        
 
     def feedbackCallback(self, msg):
         self.get_logger().info('Received action feedback message')
         self.feedback = msg.feedback
-        return
+        self.get_logger().info(str(msg.feedback))
 
     def transformer_timer_callback(self):
         try:
@@ -389,10 +403,35 @@ class MissionController(BaseNode):
                         next_x, next_y,
                         (self.read_topic("/mavros/local_position/pose").pose.position.y), (self.read_topic("/mavros/local_position/pose").pose.position.x),
                         3.0) 
-                    self.navigate_to(local_x, -local_y)
+                    
+                    goal_pose = PoseStamped()
+                    goal_pose.header.frame_id = 'map'
+                    goal_pose.header.stamp = self.get_clock().now().to_msg()
+                    goal_pose.pose.position.x = local_x
+                    goal_pose.pose.position.y = -local_y
+                    goal_pose.pose.orientation.w = 1.0
+                    goal_msg = NavigateToPose.Goal()
+                    goal_msg.pose = goal_pose
+                    
+                    self.get_logger().info(str(self.init_goal))
+                    if RosParam.get_param(self, parameter_name="init_goal", default_value= True):
+                        RosParam.set_param(self, parameter_name="init_goal", parameter_value= False)
+                        self.get_logger().info('Navigating to goal: ' + str(goal_pose.pose.position.x) + ' ' + str(goal_pose.pose.position.y))
+                        send_goal_future = self.nav_to_pose_client.send_goal_async(goal_msg, self.feedbackCallback)
+                        # self.goal_handle = send_goal_future.result()
+                        time.sleep(1)
+                    try:
+                        self.result_future = self.goal_handle.get_result_async()
+                        self.get_logger().info("status :"+str(self.result_future.result().status))
+                    except:
+                        time.sleep(0.1)
+                    self.nav_goal_pub.publish(goal_pose)
+                    self.get_logger().info(str(RosParam.get_param(self, parameter_name="init_goal", default_value= True)))
                     self.get_logger().info("Handover control to ROS")
-                    time.sleep(2.0)
+                    time.sleep(1.0)
                 elif not RosParam.get_param(self, parameter_name="obstacle_detected"):
+                    # future = self.goal_handle.cancel_goal_async()
+                    # rclpy.spin_until_future_complete(self, future)
                     self.change_mode.call(SetMode.Request(custom_mode=Mode.AUTO.value))
 
 
@@ -443,7 +482,7 @@ class MissionController(BaseNode):
 
         if RosParam.get_param(self, parameter_name="obstacle_detected", default_value=False):
             self.get_logger().info("Obstacle detected, Switching to GUIDED")
-            self.nav_to_pose_client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
+            RosParam.set_param(self, parameter_name="init_goal", parameter_value= True)
             self.change_mode.call(SetMode.Request(custom_mode=Mode.GUIDED.value))
 
     def monitor_mission_progress(self):
@@ -495,7 +534,8 @@ class MissionController(BaseNode):
         for ek3_source in ek3_source_list:
             if MavParam.mav_param_get(self, ek3_source) != ek3_source_list[ek3_source]:
                 ret = MavParam.mav_param_set(self, ek3_source, ek3_source_list[ek3_source])
-                self.get_logger().info(str(ret))        
+                self.get_logger().info(str(ret))  
+        self.get_logger().info("Autopilot Configuration complete")      
 
     def main_loop(self):
         self.initialization()
