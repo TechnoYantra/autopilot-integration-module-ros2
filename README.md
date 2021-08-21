@@ -63,13 +63,15 @@ colcon build --symlink-install
     sudo apt-get install ros-foxy-nav2-*
     ```
 
+
+
 **ROS1 Bridge **
 
 Build and install ros1 bridge from source https://github.com/ros2/ros1_bridge#building-the-bridge-from-source
 
 **MAVROS Installation**
 
-On ROS1 Noetic
+- On ROS1 Noetic
 
 ```bash
 sudo apt-get install ros-noetic-mavros ros-noetic-mavros-extras -y
@@ -78,6 +80,13 @@ chmod +x install_geographiclib_datasets.sh
 sudo ./install_geographiclib_datasets.sh
 sudo apt-get install python3-pip
 pip3 install pymavlink
+```
+
+- clone mavros_node pkg ros1 workspace
+
+```bash
+cd <your_catkin_ws>/src
+git clone https://github.com/TechnoYantra/mavros_node.git
 ```
 
 **Ardupilot Firmware Installation**
@@ -273,10 +282,13 @@ ros2 launch ty_autopilot_core ty_autopilot_vehicle_control.launch.py
 
 ```bash
 #################################################################################
-# Use gazebo-rover
+# Use gazebo-rover 
 #################################################################################
 export PARAM_FILE=<path_to_your>/<param_file>.param
 sim_vehicle.py -v APMrover2 -f gazebo-rover --wipe-eeprom --add-param-file=$PARAM_FILE -m --mav10 --map --console -I1
+# OR
+
+# edit path of param file in sitl.sh available in scipt dir in ty_autopilot_core pkg and launch the script 
 
 # OR
 #################################################################################
