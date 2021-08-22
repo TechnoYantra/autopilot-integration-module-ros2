@@ -40,8 +40,6 @@ include_directories(
   ${GAZEBO_INCLUDE_DIRS}
   )
 
-# add_subdirectory(msgs)
-
 set(plugins_single_header ArduPilotPlugin)
 
 add_library(ArduPilotPlugin SHARED src/ArduPilotPlugin.cc)
@@ -55,12 +53,12 @@ target_link_libraries(ArduPilotPlugin
 )
 ament_export_libraries(ArduPilotPlugin)
 
-# install(TARGETS
-#     ArduPilotPlugin
-#   ARCHIVE DESTINATION lib
-#   LIBRARY DESTINATION lib
-#   RUNTIME DESTINATION bin
-# )
+install(TARGETS
+    ArduPilotPlugin
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
 
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})
