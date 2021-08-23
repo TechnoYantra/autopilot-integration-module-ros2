@@ -61,9 +61,11 @@ colcon build --symlink-install
   - ```bash
     # Navigation stack 2
     sudo apt-get install ros-foxy-nav2-*
+    # tf
+    sudo apt-get install ros-foxy-tf-transformations
+    # mavros
+    sudo apt-get install ros-foxy-mavros ros-foxy-mavros-extras
     ```
-
-
 
 **ROS1 Bridge **
 
@@ -102,7 +104,9 @@ echo "export PATH=/usr/lib/ccache:$PATH" >> ~/.bashrc
 source ~/.bashrc
 ```
 
+**Ground Control Application**
 
+[Download from here](https://docs.qgroundcontrol.com/master/en/getting_started/download_and_install.html#ubuntu)
 
 ## Configuration
 
@@ -286,9 +290,9 @@ ros2 launch ty_autopilot_core ty_autopilot_vehicle_control.launch.py
 #################################################################################
 export PARAM_FILE=<path_to_your>/<param_file>.param
 sim_vehicle.py -v APMrover2 -f gazebo-rover --wipe-eeprom --add-param-file=$PARAM_FILE -m --mav10 --map --console -I1
-# OR
 
-# edit path of param file in sitl.sh available in scipt dir in ty_autopilot_core pkg and launch the script 
+# OR
+# edit path of param file in sitl.sh available in dir "ty_autopilot_core/script" and launch the script 
 
 # OR
 #################################################################################
