@@ -15,10 +15,10 @@ class ObstacleDetector(BaseNode):
     def obstacle_detection(self):
         sample = list()
         # self.get_logger().info("Obsticle: "+ str(RosParam.get_param(self, "obstacle_detected", False)))
+        RosParam.set_param(self, parameter_name="frame_transformer_beat", parameter_value=True)
 
         for angle in range(RosParam.get_param(self, "start_angle", 90)*2,RosParam.get_param(self, "end_angle", 270)*2, 2):
             if BaseNode.read_topic(self,'/laser').ranges[angle] < RosParam.get_param(self, "safety_range_max", 2) and BaseNode.read_topic(self,'/laser').ranges[angle] > RosParam.get_param(self, "safety_range_min", 0.5):
-                # print(angle/2, ": " ,msg.ranges[angle])
                 sample.append(BaseNode.read_topic(self,'/laser').ranges[angle])
             else:
                 pass
@@ -26,11 +26,11 @@ class ObstacleDetector(BaseNode):
         if sample:
             if max(sample) > RosParam.get_param(self, "safety_range_min", 0.5) and max(sample) < RosParam.get_param(self, "safety_range_max", 5):
                 RosParam.set_param(self, "obstacle_detected", True)
-                # print("Obsticle: ",True)
             else:
                 RosParam.set_param(self, "obstacle_detected", False)
-                # print("Obsticle: ",False)
         else:
             RosParam.set_param(self, "obstacle_detected", False)
+        
+        RosParam.set_param(self, parameter_name="obstacle_detection_beat", parameter_value=True)
 
 

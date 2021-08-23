@@ -10,7 +10,7 @@ ty_autopilot_core_node:
     
     autopilot_ros_config:
       twist_mux_topics:
-          ext_nav: /nav_cmd_vel # External Navigation / move_base topic
+          ext_nav: /nav_cmd_vel # External Navigation / nav2 cmd_vel topic
           key_teleop: /key/cmd_vel # Keyboard teleop topic
           sp_vel: /sp_vel/cmd_vel
 
@@ -38,7 +38,7 @@ ty_autopilot_core_node:
             orientation:
               x: 0.0
               y: 0.0
-              z: 1.576
+              z: 0.0
           source_frame_orinetation:  
           #################################################################################
           # rotation to be applied to source frame wrt world frame for t265 camera use 
@@ -46,7 +46,7 @@ ty_autopilot_core_node:
           #################################################################################
             x: 0.0
             y: 0.0
-            z: 0.0
+            z: 1.576
         pose: 
           topic: "/camera/pose/sample" 
           frame_pose:
@@ -58,3 +58,5 @@ ty_autopilot_core_node:
               x: 0.0
               y: 0.0
               z: 1.57
+
+    rosnav_goal_distance: 3.0 

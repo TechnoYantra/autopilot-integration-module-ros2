@@ -13,22 +13,22 @@ class FrameTransformer:
     def __init__(self):
         self.log = BaseNode.get_logger(self)
         self.log.info("Started FrameTransformer")
-        self.viso_roll = 0.0 #RosParam.get_param(self, param_name='ext_pose_estimation.ext_pose_estimation.ext_nav', get_value=True)  # apply_r
-        self.viso_pitch = 0.0  # apply_p
-        self.viso_yaw = 0.0  # apply_y
-        self.gamma_world = 1.576  # apply_wgamma
+        self.viso_roll = RosParam.get_param(self, parameter_name='ext_pose_estimation.odometry.frame_pose.orientation.x', default_value=0.0)  # apply_r
+        self.viso_pitch = RosParam.get_param(self, parameter_name='ext_pose_estimation.odometry.frame_pose.orientation.y', default_value=0.0)  # apply_p
+        self.viso_yaw = RosParam.get_param(self, parameter_name='ext_pose_estimation.odometry.frame_pose.orientation.z', default_value=0.0)  # apply_y
+        self.gamma_world = RosParam.get_param(self, parameter_name='source_frame_orinetation.z', default_value=1.576)  # apply_wgamma
         self.pose_out = PoseStamped()
-
+        self.external_odom_topic = RosParam.get_param(self, 'ext_pose_estimation.odometry.topic')
         self.pub_transform = BaseNode.Publisher(self, PoseStamped, "/mavros/vision_pose/pose", rclpy.qos.qos_profile_sensor_data)
-        BaseNode.subscribe_topic(self,topic="/realsense/odom/sample", type=Odometry, qos_profile=rclpy.qos.qos_profile_sensor_data) ## use base_node for subscribers
+        BaseNode.subscribe_topic(self, topic=self.external_odom_topic, type=Odometry, qos_profile=rclpy.qos.qos_profile_sensor_data) ## use base_node for subscribers
 
 
     def transform(self):
-        pose_msg = BaseNode.read_topic(self,'/realsense/odom/sample')
+        pose_msg = BaseNode.read_topic(self, self.external_odom_topic)
         # BaseNode.get_logger(self).info(str(pose_msg))
-        # try:
         pose = pose_msg.pose.pose
         # BaseNode.get_logger(self).info(str(pose.position))
+
         # Rotation from original world frame having z forward to world frame with y forward.
         pose_x = math.cos(self.gamma_world) * pose.position.x + \
             math.sin(self.gamma_world) * pose.position.y
@@ -65,7 +65,8 @@ class FrameTransformer:
         self.pose_out.pose.orientation.z = quat_body[2]
         self.pose_out.pose.orientation.w = quat_body[3]
         self.pub_transform.publish(self.pose_out)
-        # except:
-        #     pass
+
+        RosParam.set_param(self, parameter_name="frame_transformer_beat", parameter_value=True)
+
 
 

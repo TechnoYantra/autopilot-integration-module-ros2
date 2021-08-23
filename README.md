@@ -61,6 +61,10 @@ colcon build --symlink-install
   - ```bash
     # Navigation stack 2
     sudo apt-get install ros-foxy-nav2-*
+    # tf
+    sudo apt-get install ros-foxy-tf-transformations
+    # mavros
+    sudo apt-get install ros-foxy-mavros ros-foxy-mavros-extras
     ```
 
 **ROS1 Bridge **
@@ -69,7 +73,7 @@ Build and install ros1 bridge from source https://github.com/ros2/ros1_bridge#bu
 
 **MAVROS Installation**
 
-On ROS1 Noetic
+- On ROS1 Noetic
 
 ```bash
 sudo apt-get install ros-noetic-mavros ros-noetic-mavros-extras -y
@@ -78,6 +82,13 @@ chmod +x install_geographiclib_datasets.sh
 sudo ./install_geographiclib_datasets.sh
 sudo apt-get install python3-pip
 pip3 install pymavlink
+```
+
+- clone mavros_node pkg ros1 workspace
+
+```bash
+cd <your_catkin_ws>/src
+git clone https://github.com/TechnoYantra/mavros_node.git
 ```
 
 **Ardupilot Firmware Installation**
@@ -93,7 +104,9 @@ echo "export PATH=/usr/lib/ccache:$PATH" >> ~/.bashrc
 source ~/.bashrc
 ```
 
+**Ground Control Application**
 
+[Download from here](https://docs.qgroundcontrol.com/master/en/getting_started/download_and_install.html#ubuntu)
 
 ## Configuration
 
@@ -257,8 +270,6 @@ ek3_sources_config:
 </physics>
 ```
 
-
-
 ## Usage
 
 **Launch Vehicle controller**
@@ -273,10 +284,13 @@ ros2 launch ty_autopilot_core ty_autopilot_vehicle_control.launch.py
 
 ```bash
 #################################################################################
-# Use gazebo-rover
+# Use gazebo-rover 
 #################################################################################
 export PARAM_FILE=<path_to_your>/<param_file>.param
 sim_vehicle.py -v APMrover2 -f gazebo-rover --wipe-eeprom --add-param-file=$PARAM_FILE -m --mav10 --map --console -I1
+
+# OR
+# edit path of param file in sitl.sh available in dir "ty_autopilot_core/script" and launch the script 
 
 # OR
 #################################################################################
@@ -365,67 +379,10 @@ ros2 param set /ty_autopilot_core_node mav_pose_source 3
 ros2 service call /ty_autopilot/set_velocity ty_autopilot_msgs/srv/SetVelocity "{vx: 2.0, vy: 0.0, vz: 0.0, yaw_rate: 0.0, command_life: 0.0, auto_arm: True}"
 ```
 
-
-```python
-#!/usr/bin/env python
-#################################################################################
-# Setpoint Velocity
-#################################################################################
-import rospy
-from  ty_autopilot_msgs.srv import *
-
-rospy.init_node("sp_velocity")
-rospy.loginfo("Starting SetpointVelocity as sp_velocity.")
-
-setpoint_velocity = rospy.ServiceProxy("/ty_autopilot/set_velocity", SetVelocity)
-
-"""
-Service Name set_velocity
-parameters:
-vx: linear velocity x (-5 to 5 m/s) maximum speed depends on MAX_SPEED apm paramerters
-vy: linear velocity y (zero in case of rover) 
-vz: linear velocity z (zero in case off rover)
-yaw_rate: yaw rate in deg/s
-command_life: command timeout for which velocity will be non zero
-auto_arm: Automated arming on service call
-"""
-setpoint_velocity(vx= -2.0, vy= 0.0, vz= 0.0, yaw_rate= 0.0, command_life= 0.0, auto_arm= True)
-
-```
-
 - Setpoint Position Local
 
 ```bash
 ros2 service call /ty_autopilot/set_position_local ty_autopilot_msgs/srv/SetPositionLocal "{frame_id: 'map', x: 10.0, y: 5.0, z: 0.0, heading: 0.0, auto_arm: True, use_ros_planner: False}"
-```
-
-
-
-```python
-#!/usr/bin/env python
-#################################################################################
-# Setpoint Position Local
-# Use this service instead of movebase. Goal in mav_frame are transformed to ros frame conventions and vice versa
-#################################################################################
-import rospy
-from  ty_autopilot_msgs.srv import *
-
-rospy.init_node("sp_position_local")
-rospy.loginfo("Starting Setpoint Position as sp_position.")
-
-setpoint_position_local = rospy.ServiceProxy("/ty_autopilot/set_position_local", SetPositionLocal)
-"""
-Service Name set_position_local
-parameters:
-x: target local position wrt map frame x 
-y: target local position wrt map frame y 
-z: target local position wrt map frame z 
-heading: target heading angle in rad
-use_ros_planner: set true to Use move_base or false  to use ardupilot l1 controller
-auto_arm: Automated arming on service call
-"""
-setpoint_position_local(frame_id= 'map', x= 10.0, y= 5.0, z= 0.0, heading= 0.0, auto_arm= True, use_ros_planner= True)
-
 ```
 
 - Setpoint Position Global
@@ -434,92 +391,16 @@ setpoint_position_local(frame_id= 'map', x= 10.0, y= 5.0, z= 0.0, heading= 0.0, 
 ros2 service call /ty_autopilot/set_position_global ty_autopilot_msgs/srv/SetPositionGlobal "{frame_id: 'world', x: -35.36296487, y: 149.16523124, z: 0.0, heading: 0.0, auto_arm: True, use_ros_planner: False}"
 ```
 
-
-
-```python
-#!/usr/bin/env python
-#################################################################################
-# Setpoint Position Global
-# For this service GPS should be turned ON
-# This service converts GPS coordinates to map frame
-#################################################################################
-import rospy
-from  ty_autopilot_msgs.srv import *
-
-rospy.init_node("sp_position_global")
-rospy.loginfo("Starting Setpoint Position Global as sp_position_global.")
-
-setpoint_position_global = rospy.ServiceProxy("/ty_autopilot/set_position_global", SetPositionGlobal)
-"""
-Service Name set_position_global
-parameters:
-x_lat: target global position wrt GPS origin set on service call 
-y_long: target global position wrt GPS origin set on service call
-z_alt: not used for rover
-heading: target compass heading angle
-auto_arm: Automated arming on service call
-use_ros_planner: set true to Use move_base or false to use ardupilot l1 controller
-"""
-setpoint_position_global(frame_id= 'world', x_lat= -35.36296487, y_long= 149.16523124, z_alt= 0.0, heading= 0.0, auto_arm= True, use_ros_planner= True)
-
-```
-
 - Set EKF Origin
 
 ```bash
 ros2 service call /ty_autopilot/set_ekf_origin ty_autopilot_msgs/srv/SetEkfOrigin "{}"
 ```
 
-
-
-
-```python
-  #!/usr/bin/env python
-  #################################################################################
-  # Set EKF Origin
-  #################################################################################
-  import rospy
-  from  ty_autopilot_msgs.srv import *
-  
-  rospy.init_node("set_ekf_origin")
-  rospy.loginfo("setting ekf_origin service as set_ekf_origin")
-  
-  set_ekf_origin = rospy.ServiceProxy("/ty_autopilot/set_ekf_origin", SetEkfOrigin)
-  
-  """
-  Service Name set_ekf_origin
-  parameters: Empty
-  """
-  set_ekf_origin()
-```
-
 - Get Telemetry Status
 
 ```bash
 ros2 service call /ty_autopilot/get_vehicle_state ty_autopilot_msgs/srv/GetVehicleState "{frame_id: 'map'}"
-```
-
-
-
-```python
-  #!/usr/bin/env python
-  #################################################################################
-  # Get vehicle status data
-  #################################################################################
-  import rospy
-  from  ty_autopilot_msgs.srv import *
-  
-  rospy.init_node("vehicle_state")
-  rospy.loginfo("Starting vehicle status service as vehicle_state")
-  
-  get_vehicle_state = rospy.ServiceProxy("/ty_autopilot/get_vehicle_state", GetVehicleState)
-  
-  """
-  Service Name get_vehicle_state
-  parameters:
-  frame_id = map
-  """
-  get_vehicle_state(frame_id = "map")
 ```
 
 ## Upcoming Additions
