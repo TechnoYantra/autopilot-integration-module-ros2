@@ -29,27 +29,21 @@ from mavros_msgs.srv import CommandInt, WaypointPull, SetMode, CommandBool
 from mavros_msgs.msg import State, WaypointList, OverrideRCIn, HomePosition
 from rcl_interfaces.srv import ListParameters
 from geometry_msgs.msg import PoseStamped
-# from move_base_msgs.msg import MoveBaseActionResult, MoveBaseActionFeedback
 from rcl_interfaces.msg import Log
-# from ty_autopilot_msgs.srv import SendMovebaseGoal
 from ty_autopilot_msgs.msg import CommandRequest
 
-# from .node.navigate_extern import MoveBaseSeq
-# from .node.setpoint import SetpointPosition, SetpointVelocity
 from .mavutils import alvinxy, param_util, geoutil
 from .mavutils.param_util import RosParam, MavParam
 from .node.frame_transformer import  FrameTransformer
 from .node.command_republisher import CommandRepublisher
 from .services.service_navigate import ServiceNavigate
 
-# from actionlib_msgs.msg import GoalStatusArray
 import threading
 from typing import Callable
 from ty_autopilot_core.base_node import BaseNode
 from ty_autopilot_core.mavutils.mavenum import RosFrame, SetpointType, MavrosTopics, MavFrames
 from ty_autopilot_core.mavutils.param_util import RosParam
 import rclpy.qos
-# from ty_autopilot_core.mavutils.kml_parser import parse_json
 from geometry_msgs.msg import Twist
 from ty_autopilot_msgs.msg import CommandRequest
 from mavros_msgs.msg import PositionTarget, State
@@ -114,7 +108,6 @@ class MissionController(BaseNode):
         self.create_service( SetPositionGlobal, "ty_autopilot/set_position_global", self.set_position_global)
         self.create_service( SetWaypoints, "ty_autopilot/set_waypoints", self.set_waypoints)
         self.goal_handle = None
-        # self.nav_to_pose_client = None
         self.rc_channels = [0]*8
         self.init_goal = True
         self.nav_to_pose_client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
@@ -344,7 +337,6 @@ class MissionController(BaseNode):
         pass
 
     def guided(self):
-        # RosParam.set_param(self, parameter_name="continue_mission", parameter_value=True)
         if self.command_req.sp_type == SetpointType.POSITION_LOCAL.value:
             position_target = self.command_req.position_target
             self.get_logger().info("guided sp position local")
@@ -370,10 +362,8 @@ class MissionController(BaseNode):
                 self.navigate_to(position_target.x, position_target.y)
                 RosParam.set_param(self, parameter_name="new_goal", parameter_value=False)
         elif RosParam.get_param(self, parameter_name="continue_mission",default_value= False):
-            # self.get_logger().info(str(RosParam.get_param(self, parameter_name="continue_mission",default_value= False)))
             if RosParam.get_param(self, parameter_name="mux_select") != self.key_teleop_topic:
                 RosParam.set_param(self, parameter_name="mux_select", parameter_value=self.key_teleop_topic)
-                self.get_logger().info("ggg"+ str(RosParam.get_param(self, parameter_name="continue_mission",default_value= False)))
         
         if self.command_req.sp_type == SetpointType.VELOCITY.value:
             self.get_logger().info("guided sp velocity")
@@ -402,7 +392,7 @@ class MissionController(BaseNode):
                         start_x, start_y,
                         next_x, next_y,
                         (self.read_topic("/mavros/local_position/pose").pose.position.y), (self.read_topic("/mavros/local_position/pose").pose.position.x),
-                        3.0) 
+                        RosParam.get_param(self, 'rosnav_goal_distance',3.0)) 
                     
                     goal_pose = PoseStamped()
                     goal_pose.header.frame_id = 'map'
@@ -430,8 +420,6 @@ class MissionController(BaseNode):
                     self.get_logger().info("Handover control to ROS")
                     time.sleep(1.0)
                 elif not RosParam.get_param(self, parameter_name="obstacle_detected"):
-                    # future = self.goal_handle.cancel_goal_async()
-                    # rclpy.spin_until_future_complete(self, future)
                     self.change_mode.call(SetMode.Request(custom_mode=Mode.AUTO.value))
 
 
