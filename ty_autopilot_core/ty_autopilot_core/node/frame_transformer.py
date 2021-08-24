@@ -13,12 +13,13 @@ class FrameTransformer:
     def __init__(self):
         self.log = BaseNode.get_logger(self)
         self.log.info("Started FrameTransformer")
-        self.viso_roll = RosParam.get_param(self, parameter_name='ext_pose_estimation.odometry.frame_pose.orientation.x', default_value=0.0)  # apply_r
-        self.viso_pitch = RosParam.get_param(self, parameter_name='ext_pose_estimation.odometry.frame_pose.orientation.y', default_value=0.0)  # apply_p
-        self.viso_yaw = RosParam.get_param(self, parameter_name='ext_pose_estimation.odometry.frame_pose.orientation.z', default_value=0.0)  # apply_y
-        self.gamma_world = RosParam.get_param(self, parameter_name='source_frame_orinetation.z', default_value=1.576)  # apply_wgamma
+        self.viso_roll = RosParam.get_param(self, parameter_name='autopilot_ros_config.ext_pose_estimation.odometry.frame_pose.orientation.x', default_value=0.0)  # apply_r
+        self.viso_pitch = RosParam.get_param(self, parameter_name='autopilot_ros_config.ext_pose_estimation.odometry.frame_pose.orientation.y', default_value=0.0)  # apply_p
+        self.viso_yaw = RosParam.get_param(self, parameter_name='autopilot_ros_config.ext_pose_estimation.odometry.frame_pose.orientation.z', default_value=0.0)  # apply_y
+        self.gamma_world = RosParam.get_param(self, parameter_name='autopilot_ros_config.ext_pose_estimation.source_frame_orinetation.z', default_value=1.576)  # apply_wgamma
         self.pose_out = PoseStamped()
-        self.external_odom_topic = RosParam.get_param(self, 'ext_pose_estimation.odometry.topic')
+        self.external_odom_topic = RosParam.get_param(self, 'autopilot_ros_config.ext_pose_estimation.odometry.topic')
+        self.log.info(str(type(self.external_odom_topic)))
         self.pub_transform = BaseNode.Publisher(self, PoseStamped, "/mavros/vision_pose/pose", rclpy.qos.qos_profile_sensor_data)
         BaseNode.subscribe_topic(self, topic=self.external_odom_topic, type=Odometry, qos_profile=rclpy.qos.qos_profile_sensor_data) ## use base_node for subscribers
 
