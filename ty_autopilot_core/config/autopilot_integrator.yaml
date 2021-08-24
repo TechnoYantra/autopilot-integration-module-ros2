@@ -25,7 +25,7 @@ ty_autopilot_core_node:
         use_odom: True ## if false use ext_pose_topic
         odometry:
           use_tf: False
-          topic: "/camera/odom/sample"
+          topic: /realsense/odom/sample
           stemped: False
           covarience: False
           source_frame: "cam_odom_frame"
