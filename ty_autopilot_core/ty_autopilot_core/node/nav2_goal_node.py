@@ -12,10 +12,14 @@ class NavGoal(Node):
         self.create_subscription(PoseStamped, '/nav/target_goal', self.target_goal_callback, 10)
         self.nav_goal_pub = self.create_publisher( PoseStamped, "/goal_update", 10)
         self.target_goal = PoseStamped()
+        self.resend_goal = True
 
     def target_goal_callback(self, msg):
         self.target_goal = msg
-        self.nav_goal_pub.publish(msg)
+        if self.resend_goal:
+            self.send_goal()
+        else:
+            self.nav_goal_pub.publish(msg)
 
     def goal_response_callback(self, future):
         goal_handle = future.result()
@@ -34,11 +38,12 @@ class NavGoal(Node):
         result = future.result().result
         status = future.result().status
         self.get_logger().info('Goal Result: {0}'.format(result))
-    
         self.get_logger().info('Goal status: {0}'.format(status))
-        if status == 6:
-            self.send_goal()
-
+        
+        if not status == 2:
+            self.resend_goal = True
+        else:
+            self.resend_goal = False
 
     def send_goal(self):
         self.get_logger().info('Waiting for action server...')
@@ -57,7 +62,6 @@ class NavGoal(Node):
         self._send_goal_future = self._action_client.send_goal_async(
             goal_msg,
             feedback_callback=self.feedback_callback)
-
         self._send_goal_future.add_done_callback(self.goal_response_callback)
 
 
