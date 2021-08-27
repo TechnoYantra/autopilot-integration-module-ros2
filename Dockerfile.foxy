@@ -1,0 +1,36 @@
+ARG ROS_DISTRIBUTION
+FROM ros:$ROS_DISTRIBUTION-ros-base
+
+SHELL ["/bin/bash","-c"]
+COPY ./scripts /scripts
+
+# RUN ls scripts
+RUN /scripts/install_ros2.sh
+
+#ROS workspace
+ARG BUILD_TYPE
+ENV BUILD_ENV=${BUILD_TYPE}
+ENV COLCON_WS=/root/colcon_ws
+RUN mkdir -p $COLCON_WS/src
+WORKDIR $COLCON_WS/src
+COPY ./ .
+
+# build and install packages
+RUN if [ ${BUILD_ENV} = "install" ]; \
+        then source /opt/ros/$ROS_DISTRO/setup.bash \
+            && apt-get update \
+            && cd $COLCON_WS \
+            && rosdep install -y --from-paths . --ignore-src --rosdistro $ROS_DISTRO \
+            && catkin_make_isolated --install -DCMAKE_BUILD_TYPE=Release --install-space /opt/ros/$ROS_DISTRO \
+            && rm -R src ; \
+    elif [ $BUILD_ENV = "build" ]; \
+        then source /opt/ros/$ROS_DISTRO/setup.bash \
+            && apt-get update \
+            && cd $COLCON_WS \
+            && colcon build ; \
+    else echo "Please select build types: [install/build]" ; \
+    fi
+
+WORKDIR /root/colcon_ws
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash source /root/colcon_ws/install/setup.bash"]

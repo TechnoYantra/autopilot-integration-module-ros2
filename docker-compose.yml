@@ -1,0 +1,43 @@
+version: "3.8"
+services:
+  ######################################################################################
+  ## Container for ROS-Devel Workspace
+  ## command: sudo docker-compose up ros-devel
+  ## Args:  - ROS_DISTRIBUTION=kinetic | meliodic | noetic
+  ##        - BUILD_TYPE= devel | install
+  ######################################################################################
+  ros-foxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.foxy
+      args:
+        - ROS_DISTRIBUTION=foxy
+        - BUILD_TYPE=install
+    container_name: ros-foxy
+    stdin_open: true
+    tty: true
+    network_mode: "host"
+    volumes:
+      - "./:/root/colcon_ws/src:rw"
+
+  ######################################################################################
+  ## Container for ROS-Install Workspace
+  ## command: sudo docker-compose up ros-install
+  ## Args:  - ROS_DISTRIBUTION=kinetic | meliodic | noetic
+  ##        - BUILD_TYPE= devel | install
+  ######################################################################################
+  ros-noetic:
+    build:
+      context: .
+      dockerfile: Dockerfile.noetic
+      args:
+        - ROS_DISTRIBUTION=noetic
+        - BUILD_TYPE=devel
+    container_name: ros-noetic
+    stdin_open: true
+    tty: true
+    network_mode: "host"
+    environment:
+      - ROS_DISTRO=noetic
+
+  
