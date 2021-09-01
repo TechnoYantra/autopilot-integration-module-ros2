@@ -31,7 +31,7 @@ from rcl_interfaces.srv import ListParameters
 from geometry_msgs.msg import PoseStamped
 from rcl_interfaces.msg import Log
 from ty_autopilot_msgs.msg import CommandRequest
-
+from action_msgs.msg import GoalStatusArray
 from .mavutils import alvinxy, param_util, geoutil
 from .mavutils.param_util import RosParam, MavParam
 from .node.frame_transformer import  FrameTransformer
@@ -75,7 +75,7 @@ class MissionController(BaseNode):
 
         self.srv_client_mission_push = self.create_client( srv_name="/mavros/mission/push", srv_type= WaypointPush)
         self.command_request_pub = self.Publisher( CommandRequest, "/ty_autopilot/com_request_in", 10)
-        self.nav_goal_pub = self.Publisher( PoseStamped, "/goal_update", 10)
+        self.nav_goal_pub = self.Publisher( PoseStamped, "/nav/target_goal", 10)
         self.default_cmd()
 
         self.autopilot_param_config = RosParam.get_param(self, parameter_name='autopilot_param_config_file', get_value=True)
@@ -88,6 +88,7 @@ class MissionController(BaseNode):
         self.create_timer(0.2, self.mux_publisher_timer_callback)   
         self.create_timer(0.2, self.obstacle_detection_timer_callback) 
         self.create_timer(0.2, self.rc_override_timer_callback)  
+        self.create_timer(0.5, self.safety_timer_callback) 
 
         self.subscribe_topic(topic="/mavros/state", type=State, qos_profile=sensor_qos)
         self.subscribe_topic(topic="/diagnostics", type=DiagnosticArray, qos_profile=sensor_qos)
@@ -98,6 +99,7 @@ class MissionController(BaseNode):
         self.subscribe_topic(topic="/mavros/local_position/pose", type=PoseStamped, qos_profile=sensor_qos)
         self.subscribe_topic(topic="/mux/selected", type=String, qos_profile=sensor_qos)
         self.subscribe_topic(topic="/mavros/home_position/home", type=HomePosition, qos_profile=sensor_qos)
+        self.subscribe_topic(topic="/follow_path/_action/status", type=GoalStatusArray, qos_profile=sensor_qos)
         
         self.list_parameters_cli = self.create_client(ListParameters, "/ty_autopilot_core_node/list_parameters")
         self.change_mode = self.create_client(SetMode, "/mavros/set_mode" )
@@ -120,20 +122,6 @@ class MissionController(BaseNode):
         goal_pose.pose.position.x = x
         goal_pose.pose.position.y = y
         goal_pose.pose.orientation.w = 1.0
-        goal_msg = NavigateToPose.Goal()
-        goal_msg.pose = goal_pose
-        self.get_logger().info(str(self.init_goal))
-        if RosParam.get_param(self, parameter_name="init_goal", default_value= True):
-            RosParam.set_param(self, parameter_name="init_goal", parameter_value= False)
-            self.get_logger().info('Navigating to goal: ' + str(goal_pose.pose.position.x) + ' ' + str(goal_pose.pose.position.y))
-            send_goal_future = self.nav_to_pose_client.send_goal_async(goal_msg, self.feedbackCallback)
-            self.goal_handle = send_goal_future.result()
-            time.sleep(1)
-        try:
-            self.result_future = self.goal_handle.get_result_async()
-            self.get_logger().info(str(self.result_future.result().status))
-        except:
-            time.sleep(1)
         self.nav_goal_pub.publish(goal_pose)
         
 
@@ -171,7 +159,16 @@ class MissionController(BaseNode):
             MavrosRC.publish_rc_channels(self, self.rc_channels)
         except:
             self.get_logger().error('rc_override')
-            
+    
+    def safety_timer_callback(self):
+        frame_transformer_beat = RosParam.get_param(self, "frame_transformer_beat", False)
+        if frame_transformer_beat:
+            RosParam.set_param(self, parameter_name="frame_transformer_beat", parameter_value=False)
+        
+        obstacle_detection_beat = RosParam.get_param(self, "obstacle_detection_beat", False)
+        if obstacle_detection_beat:
+            RosParam.set_param(self, parameter_name="obstacle_detection_beat", parameter_value=False)
+        
     def control(self, sp_type, frame_id, auto_arm, arm_vehicle, enable_rc, use_joy, mode, waypoints, x, y, z, yaw, vx, vy, vz, yaw_rate, use_ros_planner, ctrl_wait_timeout, switch_gps):
         comm_req = CommandRequest()
         comm_req.vehicle_id = RosParam.get_param(self, "target_system_id", 1)
@@ -393,32 +390,7 @@ class MissionController(BaseNode):
                         next_x, next_y,
                         (self.read_topic("/mavros/local_position/pose").pose.position.y), (self.read_topic("/mavros/local_position/pose").pose.position.x),
                         RosParam.get_param(self, 'rosnav_goal_distance',3.0)) 
-                    
-                    goal_pose = PoseStamped()
-                    goal_pose.header.frame_id = 'map'
-                    goal_pose.header.stamp = self.get_clock().now().to_msg()
-                    goal_pose.pose.position.x = local_x
-                    goal_pose.pose.position.y = -local_y
-                    goal_pose.pose.orientation.w = 1.0
-                    goal_msg = NavigateToPose.Goal()
-                    goal_msg.pose = goal_pose
-                    
-                    self.get_logger().info(str(self.init_goal))
-                    if RosParam.get_param(self, parameter_name="init_goal", default_value= True):
-                        RosParam.set_param(self, parameter_name="init_goal", parameter_value= False)
-                        self.get_logger().info('Navigating to goal: ' + str(goal_pose.pose.position.x) + ' ' + str(goal_pose.pose.position.y))
-                        send_goal_future = self.nav_to_pose_client.send_goal_async(goal_msg, self.feedbackCallback)
-                        # self.goal_handle = send_goal_future.result()
-                        time.sleep(1)
-                    try:
-                        self.result_future = self.goal_handle.get_result_async()
-                        self.get_logger().info("status :"+str(self.result_future.result().status))
-                    except:
-                        time.sleep(0.1)
-                    self.nav_goal_pub.publish(goal_pose)
-                    self.get_logger().info(str(RosParam.get_param(self, parameter_name="init_goal", default_value= True)))
-                    self.get_logger().info("Handover control to ROS")
-                    time.sleep(1.0)
+                    self.navigate_to(local_x, -local_y)
                 elif not RosParam.get_param(self, parameter_name="obstacle_detected"):
                     self.change_mode.call(SetMode.Request(custom_mode=Mode.AUTO.value))
 
