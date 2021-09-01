@@ -8,13 +8,9 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    default_config_locks = os.path.join(get_package_share_directory('ty_autopilot_core'),
-                                        'config', 'twist_mux_locks.yaml')
-    default_config_topics = os.path.join(get_package_share_directory('ty_autopilot_core'),
-                                         'config', 'twist_mux_topics.yaml')
-    default_config_joystick = os.path.join(get_package_share_directory('ty_autopilot_core'),
-                                           'config', 'twist_mux_joystick.yaml')
-    
+    default_config_locks = os.path.join(get_package_share_directory('ty_autopilot_core'),'twist_mux_locks.yaml')
+    default_config_topics = os.path.join(get_package_share_directory('ty_autopilot_core'),'twist_mux_topics.yaml')
+    default_config_joystick = os.path.join(get_package_share_directory('ty_autopilot_core'),'twist_mux_joystick.yaml')
     return LaunchDescription([
         DeclareLaunchArgument(
             'config_locks',
@@ -30,7 +26,7 @@ def generate_launch_description():
             description='Default joystick config file'),
         DeclareLaunchArgument(
             'cmd_vel_out',
-            default_value='twist_mux/cmd_vel',
+            default_value='/mavros/setpoint_velocity/cmd_vel_unstamped',
             description='cmd vel output topic'),
         Node(
             package='twist_mux',
