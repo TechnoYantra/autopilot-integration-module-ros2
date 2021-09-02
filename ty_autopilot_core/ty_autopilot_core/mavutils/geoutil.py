@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import math 
+import numpy as np
+import matplotlib.pyplot as plt
 
 def distance(lat1, lat2, lon1, lon2): 
     EARTH_RADIOUS = 6371
@@ -31,7 +33,22 @@ def get_target_goal_on_path(X1, Y1, X2, Y2, xr, yr, offset):
     y_target = ((Y2-Y1)*(drp+offset))/D + Y1
     return x_target, y_target
 
+def get_pose_between_wp(X1, Y1, X2, Y2):
+    points = []
+    D = math.sqrt((X2 - X1)**2 + (Y2 - Y1)**2) # path_length
+    i = 0
+    j = 0   
+    for d in np.arange(0, D, 0.05):
+        points.append([X1 + (d/D)*(X2-X1) ,Y1 + (d/D)*(Y2-Y1)])
+        i = i+1
+    return points
 
 
-x_target,y_target = get_target_goal_on_path(0,0,10,0,5,15,0)
-print(x_target,y_target)
+# x_target,y_target = get_target_goal_on_path(0,0,10,0,5,15,0)
+# X1 = 0.0
+# Y1 = 0.0
+# X2 = 10.0
+# Y2 = 10.0
+# get_pose_between_wp(X1, Y1, X2, Y2)
+# print(x_target,y_target)
+
