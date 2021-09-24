@@ -27,6 +27,7 @@ setup(
         'console_scripts': [
             'vehicle_controller_node = ty_autopilot_core.vehicle_controller:main',
             'cmd_vel_mux_selector_node = ty_autopilot_core.node.cmd_vel_mux_selector:main',
+            'nav2_goal_node = ty_autopilot_core.node.nav2_goal_node:main',
         ],
     },
 )
