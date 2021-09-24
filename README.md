@@ -63,6 +63,7 @@ colcon build --symlink-install
     sudo apt-get install ros-foxy-nav2-*
     # tf
     sudo apt-get install ros-foxy-tf-transformations
+    sudo pip3 install transforms3d
     # mavros
     sudo apt-get install ros-foxy-mavros ros-foxy-mavros-extras
     ```
@@ -94,7 +95,7 @@ git clone https://github.com/TechnoYantra/mavros_node.git
 **Ardupilot Firmware Installation**
 
 ```bash
-git clone https://github.com/TechnoYantra/ardupilot.git
+git clone -b ty/dualhbridge https://github.com/TechnoYantra/ardupilot.git
 cd ardupilot
 git submodule update --init --recursive
 Tools/environment_install/install-prereqs-ubuntu.sh -y
